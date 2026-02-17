@@ -10,6 +10,12 @@ public:
     bool Login(std::string name,std::string pwd){
         std::cout << "doing local service: Login" << std::endl;
         std::cout << "name " << name << "pwd:" << pwd << std::endl;
+        return true;
+    }
+    bool Register(uint32_t id,std::string name,std::string pwd){
+        std::cout << "doing local service:Register" << std::endl;
+        std::cout << "id " << id << "name " << name << "pwd " << pwd << std::endl;
+        return true;
     }
     //重写基类UserServiceRpc的虚函数，下面这些方法都是框架直接调用的
     void Login(::google::protobuf::RpcController* controller,
@@ -28,6 +34,20 @@ public:
                             response->set_success(loginRes);
                             //执行回调操作
                             done->Run();
+                       }
+    void Register(::google::protobuf::RpcController* controller,
+                       const ::fix_bug::RegisterRequest* request,
+                       ::fix_bug::RegisterResponse* response,
+                       ::google::protobuf::Closure* done){
+                           uint32_t id = request->id();
+                           std::string name = request->name();
+                           std::string pwd = request->pwd();
+                           bool ret = Register(id,name,pwd);
+                           response->mutable_result()->set_errcode(0);
+                           response->mutable_result()->set_errmsg("");
+                           response->set_success(ret);
+
+                           done->Run();
                        }
 
 };
