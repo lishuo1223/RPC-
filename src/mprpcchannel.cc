@@ -10,6 +10,7 @@
 #include "rpcheader.pb.h"
 #include "mprpcapplication.h"
 #include <unistd.h>
+#include "zookeeperutil.h"
 
 using namespace google::protobuf;
 
@@ -65,8 +66,23 @@ void MprpcChannel::CallMethod(const MethodDescriptor* method,
                                     controller->SetFailed(errtxt);
                                     exit(EXIT_FAILURE);
                                 }
-                                std::string ip = MprpcApplication::GetInstance().GetConfig().Load("rpcserverip");
-                                u_int16_t port = atoi(MprpcApplication::GetInstance().GetConfig().Load("rpcserverport").c_str());
+
+                                ZkClient zkCli;
+                                zkCli.start();
+                                std::string method_path = "/"+service_name+"/"+method_name;
+                                std::string host_data = zkCli.GetData(method_path.c_str());
+                                if(host_data == ""){
+                                    controller->SetFailed(method_path+"is not exists!");
+                                    return;
+                                }
+                                int idx = host_data.find(":");
+                                if(idx == -1){
+                                    controller->SetFailed(method_path+"is invaild!");
+                                    return;
+                                }
+                                std::string ip = host_data.substr(0,idx);
+                                u_int16_t port = atoi(host_data.substr(idx+1,host_data.size()-idx).c_str());
+
                                 struct sockaddr_in server_addr;
                                 server_addr.sin_family = AF_INET;
                                 server_addr.sin_port = htons(port);
